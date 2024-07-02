@@ -1,24 +1,22 @@
-use actix_web::{get, web, App, HttpServer, Responder};
-
-struct AppState {
-    app_name: String,
-}
-
-#[get("/")]
-async fn index(data: web::Data<AppState>) -> impl Responder {
-    let app_name = &data.app_name;
-    format!("Hello {}!", app_name)
-}
+use actix_web::{guard, web, App, HttpResponse, HttpServer};
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     HttpServer::new(|| {
-        App::new().app_data(web::Data::new(AppState{
-            app_name: String::from("Actix-web")
-        }))
-        .service(index)
+        App::new()
+            .service(
+                web::scope("/")
+                    .guard(guard::Host("www.rust-lang.org"))
+                    .route("", web::to(|| async { HttpResponse::Ok().body("www") })),
+            )
+            .service(
+                web::scope("/")
+                    .guard(guard::Host("users.rust-lang.org"))
+                    .route("", web::to(|| async { HttpResponse::Ok().body("user") })),
+            )
+            .route("/", web::to(HttpResponse::Ok))
     })
-    .bind(("127.0.0.1",8080))?
+    .bind(("127.0.0.1", 8080))?
     .run()
     .await
 }
