@@ -1,33 +1,20 @@
-use actix_web::{web, App, HttpResponse, HttpServer};
-
-// this function could be located in a different module
-fn scoped_config(cfg: &mut web::ServiceConfig) {
-    cfg.service(
-        web::resource("/test")
-            .route(web::get().to(|| async { HttpResponse::Ok().body("test") }))
-            .route(web::head().to(HttpResponse::MethodNotAllowed)),
-    );
-}
-
-// this function could be located in a different module
-fn config(cfg: &mut web::ServiceConfig) {
-    cfg.service(
-        web::resource("/app")
-            .route(web::get().to(|| async { HttpResponse::Ok().body("app") }))
-            .route(web::head().to(HttpResponse::MethodNotAllowed)),
-    );
-}
+use actix_web::{guard, web, App, HttpResponse, HttpServer};
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     HttpServer::new(|| {
         App::new()
-            .configure(config)
-            .service(web::scope("/api").configure(scoped_config))
-            .route(
-                "/",
-                web::get().to(|| async { HttpResponse::Ok().body("/") }),
+            .service(
+                web::scope("/")
+                    .guard(guard::Host("www.rust-lang.org"))
+                    .route("", web::to(|| async { HttpResponse::Ok().body("www") })),
             )
+            .service(
+                web::scope("/")
+                    .guard(guard::Host("users.rust-lang.org"))
+                    .route("", web::to(|| async { HttpResponse::Ok().body("user") })),
+            )
+            .route("/", web::to(HttpResponse::Ok))
     })
     .bind(("127.0.0.1", 8080))?
     .run()
