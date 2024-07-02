@@ -1,24 +1,35 @@
-use actix_web::{get, web, App, HttpServer, Responder};
+use actix_web::{web, App, HttpResponse, HttpServer};
 
-struct AppState {
-    app_name: String,
+// this function could be located in a different module
+fn scoped_config(cfg: &mut web::ServiceConfig) {
+    cfg.service(
+        web::resource("/test")
+            .route(web::get().to(|| async { HttpResponse::Ok().body("test") }))
+            .route(web::head().to(HttpResponse::MethodNotAllowed)),
+    );
 }
 
-#[get("/")]
-async fn index(data: web::Data<AppState>) -> impl Responder {
-    let app_name = &data.app_name;
-    format!("Hello {}!", app_name)
+// this function could be located in a different module
+fn config(cfg: &mut web::ServiceConfig) {
+    cfg.service(
+        web::resource("/app")
+            .route(web::get().to(|| async { HttpResponse::Ok().body("app") }))
+            .route(web::head().to(HttpResponse::MethodNotAllowed)),
+    );
 }
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
     HttpServer::new(|| {
-        App::new().app_data(web::Data::new(AppState{
-            app_name: String::from("Actix-web")
-        }))
-        .service(index)
+        App::new()
+            .configure(config)
+            .service(web::scope("/api").configure(scoped_config))
+            .route(
+                "/",
+                web::get().to(|| async { HttpResponse::Ok().body("/") }),
+            )
     })
-    .bind(("127.0.0.1",8080))?
+    .bind(("127.0.0.1", 8080))?
     .run()
     .await
 }
