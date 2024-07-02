@@ -14,7 +14,7 @@ async fn index(data: web::Data<AppState>) -> impl Responder {
 async fn main() -> std::io::Result<()> {
     HttpServer::new(|| {
         App::new().app_data(web::Data::new(AppState{
-            app_name: String::from(value("Actix-web"))
+            app_name: String::from("Actix-web")
         }))
         .service(index)
     })
